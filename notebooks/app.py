@@ -8,9 +8,9 @@ import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Load the pre-trained model and scalers
-model_price = joblib.load('../models/price_model.pkl')  # Load model from models/
-normalizer = joblib.load('../scalers/normalizer.pkl')  # Load MinMaxScaler from scalers/
-ohe = joblib.load('../scalers/ohe.pkl')  # Load OneHotEncoder from scalers/
+model_price = joblib.load('models/price_model.pkl')  # Load model from models/
+normalizer = joblib.load('scalers/normalizer.pkl')  # Load MinMaxScaler from scalers/
+ohe = joblib.load('scalers/ohe.pkl')  # Load OneHotEncoder from scalers/
 
 # Configure the Viridis color palette
 viridis = cm.get_cmap('viridis')
