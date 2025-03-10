@@ -21,16 +21,16 @@ st.title("Airbnb Price Prediction")
 st.sidebar.header("Enter the listing details")
 
 # Sidebar inputs (valores reales, no normalizados ni dummificados)
-city = st.sidebar.selectbox("City", ["Amsterdam", "Athens", "Barcelona", "Berlin", "Budapest", "Lisbon", "London", "Paris", "Rome", "Vienna"])
-room_type = st.sidebar.selectbox("Room Type", ["Private room", "Entire home/apt", "Shared room"])
+city = st.sidebar.selectbox("City", ohe.categories_[5])  #  Se toma de OneHotEncoder
+room_type = st.sidebar.selectbox("Room Type", ohe.categories_[0])
 person_capacity = st.sidebar.selectbox("Person Capacity", [1, 2, 3, 4, 6, 5])
 cleanliness_rating = st.sidebar.slider("Cleanliness Rating", 0.0, 10.0, 5.0)
 bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 100.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 100.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 3000.0, 1500.0)
-guest_satisfaction_overall = st.sidebar.slider("Guest Satisfaction", 0.0, 100.0, 85.0)  #  Solo para normalizar
-rest_index = st.sidebar.slider("Restaurant Index", 0.0, 1000.0, 500.0)  #  Solo para normalizar
+guest_satisfaction_overall = st.sidebar.slider("Guest Satisfaction (not used in model)", 0.0, 100.0, 85.0)  #  Solo para normalizar
+rest_index = st.sidebar.slider("Restaurant Index (not used in model)", 0.0, 1000.0, 500.0)  #  Solo para normalizar
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
@@ -48,7 +48,7 @@ numerical_columns = np.array([[
 ]])
 numerical_transformed = normalizer.transform(numerical_columns)
 
-# **Transformar correctamente los valores booleanos**
+#  **Transformar correctamente los valores booleanos**
 host_is_superhost = int(host_is_superhost)  #  Convertir a 0 o 1
 multi = int(multi)  #  Convertir a 0 o 1
 biz = int(biz)  #  Convertir a 0 o 1
@@ -61,7 +61,11 @@ categorical_nominal = pd.DataFrame(
 )
 
 #  **Transformar con OneHotEncoder**
-categorical_transformed = ohe.transform(categorical_nominal)
+try:
+    categorical_transformed = ohe.transform(categorical_nominal)
+except ValueError as e:
+    st.error(f"Error in OneHotEncoder: {e}")
+    st.stop()
 
 # Convertir a DataFrame para garantizar que las columnas tienen el mismo orden
 categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
@@ -69,26 +73,33 @@ categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.g
 # Depuración: Ver las columnas generadas
 st.write("Categorical transformed columns:", categorical_transformed_df.columns)
 
-# Combinar todas las variables en el input del modelo
+#  Asegurar que `person_capacity` y `bedrooms` tienen la misma forma
+numeric_manual = np.array([[np.log1p(person_capacity), bedrooms]])
+
+#  **Combinar todas las features asegurando la misma dimensión**
 X_input = np.hstack((
-    [np.log1p(person_capacity), bedrooms],  # Variables numéricas sin normalizar
-    numerical_transformed[:, [0, 2, 3, 4]],  #  Usamos solo las 4 variables que necesita el modelo
-    categorical_transformed_df.to_numpy()  # Variables categóricas correctamente transformadas
+    numeric_manual,                          #  (1,2)
+    numerical_transformed[:, [0, 2, 3, 4]],  # Usamos solo las 4 variables que necesita el modelo
+    categorical_transformed_df.to_numpy()    #  (1, X)
 ))
 
 # **Predicción del precio**
 if st.sidebar.button("Predict Price"):
-    log_price_predicted = model_price.predict([X_input])[0]
-    price_predicted = np.expm1(log_price_predicted)  # Convertir el logaritmo del precio al precio original
+    try:
+        log_price_predicted = model_price.predict(X_input)[0]
+        price_predicted = np.expm1(log_price_predicted)  # Convertir el logaritmo del precio al precio original
 
-    # **Mostrar resultado**
-    st.subheader("Prediction Results")
-    st.write(f"**Estimated Price:** {price_predicted:.2f} € per night")
+        # **Mostrar resultado**
+        st.subheader("Prediction Results")
+        st.write(f"**Estimated Price:** {price_predicted:.2f} € per night")
 
-    # **Visualizar precio con la paleta Viridis**
-    fig, ax = plt.subplots()
-    color = viridis(norm(price_predicted / 500))  # Normalize with an arbitrary price reference
-    ax.barh(["Estimated Price"], [price_predicted], color=color)
-    ax.set_xlabel("Price (€)")
-    ax.set_title("Predicted Price Visualization")
-    st.pyplot(fig)
+        # **Visualizar precio con la paleta Viridis**
+        fig, ax = plt.subplots()
+        color = viridis(norm(price_predicted / 500))  # Normalize with an arbitrary price reference
+        ax.barh(["Estimated Price"], [price_predicted], color=color)
+        ax.set_xlabel("Price (€)")
+        ax.set_title("Predicted Price Visualization")
+        st.pyplot(fig)
+
+    except Exception as e:
+        st.error(f"Error in prediction: {e}")
