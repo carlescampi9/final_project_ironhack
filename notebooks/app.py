@@ -11,7 +11,16 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 model_price = joblib.load('models/price_model.pkl')  # Load model from models/
 normalizer = joblib.load('scalers/normalizer.pkl')  # Load MinMaxScaler from scalers/
 ohe = joblib.load('scalers/ohe.pkl')  # Load OneHotEncoder from scalers/
-st.write("Feature names in OneHotEncoder:", ohe.feature_names_in_)
+
+categorical_nominal = pd.DataFrame(
+    [[room_type, host_is_superhost, multi, biz, weekend, city]],
+    columns=["room_type", "host_is_superhost", "multi", "biz", "weekend", "city"]
+)
+
+categorical_transformed = ohe.transform(categorical_nominal)
+categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
+st.write("Categorical transformed columns:", categorical_transformed_df.columns)
+
 
 
 # Configure the Viridis color palette
