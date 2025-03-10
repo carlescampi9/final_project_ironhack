@@ -21,18 +21,18 @@ st.title("Airbnb Price Prediction")
 st.sidebar.header("Enter the listing details")
 
 # User inputs
+city = st.sidebar.selectbox("City", ["Amsterdam", "Athens", "Barcelona", "Berlin", "Budapest", "Lisbon", "London", "Paris", "Rome", "Vienna"])
 room_type = st.sidebar.selectbox("Room Type", ["Private room", "Entire home/apt", "Shared room"])
-person_capacity = st.sidebar.selectbox("Person Capacity", [2, 4, 3, 6, 5])
-host_is_superhost = st.sidebar.checkbox("Is Superhost?")
-multi = st.sidebar.checkbox("Multiple Listing?")
-biz = st.sidebar.checkbox("Business Accommodation?")
+person_capacity = st.sidebar.selectbox("Person Capacity", [1,2, 3, 4, 6, 5])
 cleanliness_rating = st.sidebar.slider("Cleanliness Rating", 0.0, 10.0, 5.0)
-bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 0, 5, 4, 6, 9, 10, 8])
+bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 100.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 100.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 3000.0, 1500.0)
+host_is_superhost = st.sidebar.checkbox("Is Superhost?")
+multi = st.sidebar.checkbox("Multiple Listing?")
+biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
-city = st.sidebar.selectbox("City", ["Amsterdam", "Athens", "Barcelona", "Berlin", "Budapest", "Lisbon", "London", "Paris", "Rome", "Vienna"])
 
 # Prepare categorical variables
 categorical_nominal = pd.DataFrame([[room_type, host_is_superhost, multi, biz, weekend, city]],
