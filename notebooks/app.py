@@ -14,8 +14,8 @@ ohe = joblib.load('scalers/ohe.pkl')  #  OneHotEncoder
 # Configure the Viridis color palette
 viridis = cm.get_cmap('viridis')
 norm = mcolors.Normalize(vmin=0, vmax=1)
-primary_color = mcolors.to_hex(viridis(0.6))  # Color intermedio de Viridis
-background_color = mcolors.to_hex(viridis(0.2))  # Color más oscuro para el fondo
+primary_color = mcolors.to_hex(viridis(0.6))  
+background_color = mcolors.to_hex(viridis(0.2))  
 
 title_html = f"""
     <h1 style='text-align: center; color: {primary_color};'>Airbnb Price Prediction</h1>
@@ -35,16 +35,16 @@ st.sidebar.markdown(
 st.sidebar.header("Enter the listing details")
 
 # Sidebar inputs
-city = st.sidebar.selectbox("City", ohe.categories_[5])  #  Se toma de OneHotEncoder
+city = st.sidebar.selectbox("City", ohe.categories_[5])  
 room_type = st.sidebar.selectbox("Room Type", ohe.categories_[0])
-person_capacity = st.sidebar.selectbox("Person Capacity", [1, 2, 3, 4, 6, 5])
+person_capacity = st.sidebar.selectbox("Person Capacity", [1, 2, 3, 4, 5, 6])
 cleanliness_rating = st.sidebar.slider("Cleanliness Rating", 0.0, 10.0, 5.0)
 bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 100.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 100.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 3000.0, 1500.0)
-guest_satisfaction_overall = st.sidebar.slider("Guest Satisfaction (not used in model)", 0.0, 100.0, 85.0)  #  Solo para normalizar
-rest_index = st.sidebar.slider("Restaurant Index (not used in model)", 0.0, 1000.0, 500.0)  #  Solo para normalizar
+guest_satisfaction_overall = st.sidebar.slider("Guest Satisfaction", 0.0, 100.0, 85.0)  
+rest_index = st.sidebar.slider("Restaurant Index ", 0.0, 1000.0, 500.0)  
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
