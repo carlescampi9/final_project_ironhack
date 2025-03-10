@@ -62,3 +62,5 @@ if st.sidebar.button("Predict Price"):
     ax.set_xlabel("Price (€)")
     ax.set_title("Predicted Price Visualization")
     st.pyplot(fig)
+
+    
