@@ -17,4 +17,5 @@ dependencies = [
     "optuna>=4.2.1",
     "optuna-dashboard>=0.17.0",
     "graphviz>=0.20.3",
+    "streamlit>=1.43.1",
 ]
