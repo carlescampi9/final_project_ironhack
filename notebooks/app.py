@@ -11,6 +11,8 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 model_price = joblib.load('models/price_model.pkl')  # Load model from models/
 normalizer = joblib.load('scalers/normalizer.pkl')  # Load MinMaxScaler from scalers/
 ohe = joblib.load('scalers/ohe.pkl')  # Load OneHotEncoder from scalers/
+st.write("Feature names in OneHotEncoder:", ohe.feature_names_in_)
+
 
 # Configure the Viridis color palette
 viridis = cm.get_cmap('viridis')
