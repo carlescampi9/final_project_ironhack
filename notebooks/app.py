@@ -2,7 +2,6 @@ import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
@@ -15,12 +14,27 @@ ohe = joblib.load('scalers/ohe.pkl')  #  OneHotEncoder
 # Configure the Viridis color palette
 viridis = cm.get_cmap('viridis')
 norm = mcolors.Normalize(vmin=0, vmax=1)
+primary_color = mcolors.to_hex(viridis(0.6))  # Color intermedio de Viridis
+background_color = mcolors.to_hex(viridis(0.2))  # Color más oscuro para el fondo
 
-st.title("Airbnb Price Prediction")
+title_html = f"""
+    <h1 style='text-align: center; color: {primary_color};'>Airbnb Price Prediction</h1>
+"""
+st.markdown(title_html, unsafe_allow_html=True)
+
+st.sidebar.markdown(
+    f"""
+    <style>
+        .sidebar .sidebar-content {{ background-color: {background_color}; color: white; }}
+        .stButton>button {{ background-color: {primary_color}; color: white; font-size: 16px; }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.sidebar.header("Enter the listing details")
 
-# Sidebar inputs (valores reales, no normalizados ni dummificados)
+# Sidebar inputs
 city = st.sidebar.selectbox("City", ohe.categories_[5])  #  Se toma de OneHotEncoder
 room_type = st.sidebar.selectbox("Room Type", ohe.categories_[0])
 person_capacity = st.sidebar.selectbox("Person Capacity", [1, 2, 3, 4, 6, 5])
@@ -36,70 +50,46 @@ multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
 
-### ** Transformaciones necesarias para que coincidan con el entrenamiento**
-# Normalizar valores numéricos (pasamos las 6 variables, aunque solo usaremos 4 en el modelo)
-numerical_columns = np.array([[
-    cleanliness_rating, 
-    guest_satisfaction_overall,  #  Incluido aunque no se use en el modelo
-    dist, 
-    metro_dist, 
-    attr_index, 
-    rest_index  #  Incluido aunque no se use en el modelo
-]])
+# Transformations
+numerical_columns = np.array([[cleanliness_rating, guest_satisfaction_overall, dist, metro_dist, attr_index, rest_index]])
 numerical_transformed = normalizer.transform(numerical_columns)
 
-#  **Transformar correctamente los valores booleanos**
-host_is_superhost = int(host_is_superhost)  #  Convertir a 0 o 1
-multi = int(multi)  #  Convertir a 0 o 1
-biz = int(biz)  #  Convertir a 0 o 1
-weekend = int(weekend)  #  Convertir a 0 o 1
+# Transform booleans
+host_is_superhost, multi, biz, weekend = map(int, [host_is_superhost, multi, biz, weekend])
 
-# Crear un DataFrame con los valores categóricos
 categorical_nominal = pd.DataFrame(
     [[room_type, host_is_superhost, multi, biz, weekend, city]],
     columns=["room_type", "host_is_superhost", "multi", "biz", "weekend", "city"]
 )
 
-#  **Transformar con OneHotEncoder**
 try:
     categorical_transformed = ohe.transform(categorical_nominal)
 except ValueError as e:
     st.error(f"Error in OneHotEncoder: {e}")
     st.stop()
 
-# Convertir a DataFrame para garantizar que las columnas tienen el mismo orden
 categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
 
-# Depuración: Ver las columnas generadas
-st.write("Categorical transformed columns:", categorical_transformed_df.columns)
-
-#  Asegurar que `person_capacity` y `bedrooms` tienen la misma forma
 numeric_manual = np.array([[np.log1p(person_capacity), bedrooms]])
 
-#  **Combinar todas las features asegurando la misma dimensión**
 X_input = np.hstack((
-    numeric_manual,                          #  (1,2)
-    numerical_transformed[:, [0, 2, 3, 4]],  # Usamos solo las 4 variables que necesita el modelo
-    categorical_transformed_df.to_numpy()    #  (1, X)
+    numeric_manual,
+    numerical_transformed[:, [0, 2, 3, 4]],
+    categorical_transformed_df.to_numpy()
 ))
 
-# **Predicción del precio**
 if st.sidebar.button("Predict Price"):
     try:
         log_price_predicted = model_price.predict(X_input)[0]
-        price_predicted = np.expm1(log_price_predicted)  # Convertir el logaritmo del precio al precio original
+        price_predicted = np.expm1(log_price_predicted)
 
-        # **Mostrar resultado**
-        st.subheader("Prediction Results")
-        st.write(f"**Estimated Price:** {price_predicted:.2f} € per night")
-
-        # **Visualizar precio con la paleta Viridis**
-        fig, ax = plt.subplots()
-        color = viridis(norm(price_predicted / 500))  # Normalize with an arbitrary price reference
-        ax.barh(["Estimated Price"], [price_predicted], color=color)
-        ax.set_xlabel("Price (€)")
-        ax.set_title("Predicted Price Visualization")
-        st.pyplot(fig)
-
+        result_html = f"""
+        <div style='text-align: center; padding: 20px; background-color: {background_color}; border-radius: 10px;'>
+            <h2 style='color: white;'>Estimated Price</h2>
+            <h1 style='color: {primary_color}; font-size: 48px;'>{price_predicted:.2f} €</h1>
+            <p style='color: white; font-size: 18px;'>per night</p>
+        </div>
+        """
+        st.markdown(result_html, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Error in prediction: {e}")
