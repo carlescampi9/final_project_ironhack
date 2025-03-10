@@ -8,9 +8,9 @@ import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Load the pre-trained model and scalers
-model_price = joblib.load('models/price_model.pkl')  # Load AdaBoostRegressor
-normalizer = joblib.load('scalers/normalizer.pkl')  # Load MinMaxScaler
-ohe = joblib.load('scalers/ohe.pkl')  # Load OneHotEncoder
+model_price = joblib.load('models/price_model.pkl')  #  AdaBoostRegressor
+normalizer = joblib.load('scalers/normalizer.pkl')  #  MinMaxScaler
+ohe = joblib.load('scalers/ohe.pkl')  #  OneHotEncoder
 
 # Configure the Viridis color palette
 viridis = cm.get_cmap('viridis')
@@ -29,14 +29,23 @@ bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 4, 5, 6, 7, 8, 9
 dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 100.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 100.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 3000.0, 1500.0)
+guest_satisfaction_overall = st.sidebar.slider("Guest Satisfaction (not used in model)", 0.0, 100.0, 85.0)  #  Solo para normalizar
+rest_index = st.sidebar.slider("Restaurant Index (not used in model)", 0.0, 1000.0, 500.0)  #  Solo para normalizar
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
 
 ### **📌 Transformaciones necesarias para que coincidan con el entrenamiento**
-# Normalizar valores numéricos
-numerical_columns = np.array([[cleanliness_rating, dist, metro_dist, attr_index]])
+# Normalizar valores numéricos (pasamos las 6 variables, aunque solo usaremos 4 en el modelo)
+numerical_columns = np.array([[
+    cleanliness_rating, 
+    guest_satisfaction_overall,  #  Incluido aunque no se use en el modelo
+    dist, 
+    metro_dist, 
+    attr_index, 
+    rest_index  #  Incluido aunque no se use en el modelo
+]])
 numerical_transformed = normalizer.transform(numerical_columns)
 
 # Crear un DataFrame con los valores categóricos
@@ -63,7 +72,7 @@ st.write("Categorical transformed columns:", categorical_transformed_df.columns)
 # Combinar todas las variables en el input del modelo
 X_input = np.hstack((
     [np.log1p(person_capacity), bedrooms],  # Variables numéricas sin normalizar
-    numerical_transformed,  # Variables normalizadas
+    numerical_transformed[:, [0, 2, 3, 4]],  # Usamos solo las 4 variables que necesita el modelo
     categorical_transformed_df.to_numpy()  # Variables categóricas correctamente transformadas
 ))
 
