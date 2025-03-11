@@ -43,14 +43,16 @@ bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 4, 5, 6, 7, 8, 9
 dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 50.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 50.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
+guest_satisfaction_overall = st.sidebar.slider("Guest Satisfaction (not used in model)", 0.0, 100.0, 85.0)  
+rest_index = st.sidebar.slider("Restaurant Index (not used in model)", 0.0, 500.0, 250.0)  
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
 
-# Normalizar los valores numéricos
-numerical_columns = np.array([[cleanliness_rating, dist, metro_dist, attr_index]])
-numerical_transformed = normalizer.transform(numerical_columns)
+# ✅ **Incluir todas las variables con las que se entrenó el escalador**
+numerical_columns = np.array([[cleanliness_rating, guest_satisfaction_overall, dist, metro_dist, attr_index, rest_index]])
+numerical_transformed = normalizer.transform(numerical_columns)  # ✅ Ahora tiene 6 columnas como el scaler espera
 
 # Transform booleans
 host_is_superhost, multi, biz, weekend = map(int, [host_is_superhost, multi, biz, weekend])
@@ -75,7 +77,7 @@ numeric_manual = np.array([[np.log1p(person_capacity), bedrooms]])  # ✅ Aplica
 
 X_input = np.hstack((
     numeric_manual,
-    numerical_transformed,
+    numerical_transformed[:, [0, 2, 3, 4]],  # ✅ Solo seleccionamos las 4 necesarias para el modelo
     categorical_transformed_df.to_numpy()
 ))
 
