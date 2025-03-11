@@ -45,14 +45,17 @@ dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 50.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 50.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 
-# Transformaciones
+# Crear DataFrame con las variables actuales
 numerical_columns = pd.DataFrame([[cleanliness_rating, dist, metro_dist, attr_index]], 
                                  columns=["cleanliness_rating", "dist", "metro_dist", "attr_index"])
 
-# Verificar que las columnas coincidan con las esperadas por el scaler
-if list(numerical_columns.columns) != list(normalizer.feature_names_in_):
-    st.error(f"Error: Features esperadas por el scaler: {list(normalizer.feature_names_in_)}")
-    st.stop()
+# Agregar las columnas faltantes con valores dummy
+numerical_columns["guest_satisfaction_overall"] = 50  # Valor promedio
+numerical_columns["rest_index"] = 250  # Valor promedio
+
+# Reordenar las columnas en el mismo orden que espera el scaler
+numerical_columns = numerical_columns[["cleanliness_rating", "guest_satisfaction_overall", "dist", 
+                                       "metro_dist", "attr_index", "rest_index"]]
 
 # Aplicar transformación con el scaler
 numerical_transformed = normalizer.transform(numerical_columns)
