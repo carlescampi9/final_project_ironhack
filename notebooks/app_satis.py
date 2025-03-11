@@ -7,9 +7,9 @@ import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Load models and scalers
-model_satisfaction = joblib.load('models/satisfaction_model.pkl')  #  AdaBoostRegressor para satisfacción
-normalizer = joblib.load('scalers/normalizer.pkl')  #  MinMaxScaler (entrenado con 6 features)
-ohe = joblib.load('scalers/ohe.pkl')  #  OneHotEncoder
+model_satisfaction = joblib.load('models/satisfaction_model.pkl')  # ✅ AdaBoostRegressor para satisfacción
+normalizer = joblib.load('scalers/normalizer.pkl')  # ✅ MinMaxScaler
+ohe = joblib.load('scalers/ohe.pkl')  # ✅ OneHotEncoder
 
 # Configure the Viridis color palette
 viridis = cm.get_cmap('viridis')
@@ -17,7 +17,6 @@ norm = mcolors.Normalize(vmin=0, vmax=1)
 primary_color = mcolors.to_hex(viridis(0.6))  
 background_color = mcolors.to_hex(viridis(0.2))  
 
-# App Title with Colors
 title_html = f"""
     <h1 style='text-align: center; color: {primary_color};'>Airbnb Guest Satisfaction Prediction</h1>
 """
@@ -35,7 +34,7 @@ st.sidebar.markdown(
 
 st.sidebar.header("Enter the listing details")
 
-# Sidebar inputs (sin guest_satisfaction_overall ni realSum)
+# Sidebar inputs
 city = st.sidebar.selectbox("City", ohe.categories_[5])  
 room_type = st.sidebar.selectbox("Room Type", ohe.categories_[0])
 person_capacity = st.sidebar.selectbox("Person Capacity", [1, 2, 3, 4, 5, 6])
@@ -44,39 +43,25 @@ bedrooms = st.sidebar.selectbox("Number of Bedrooms", [1, 2, 3, 4, 5, 6, 7, 8, 9
 dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 50.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 50.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
-
-# 🔹 **Variables que no se usan en el modelo pero necesarias para evitar errores con MinMaxScaler**
-guest_satisfaction_overall = 85.0  # Valor dummy, no se usa
-rest_index = 500.0  # Valor dummy, no se usa
-
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
 
-# **Transformaciones**
-numerical_columns = np.array([[
-    cleanliness_rating, 
-    guest_satisfaction_overall,  #  Se pasa para evitar error con MinMaxScaler
-    dist, 
-    metro_dist, 
-    attr_index, 
-    rest_index  #  Se pasa para evitar error con MinMaxScaler
-]])
+# Normalizar los valores numéricos
+numerical_columns = np.array([[cleanliness_rating, dist, metro_dist, attr_index]])
 numerical_transformed = normalizer.transform(numerical_columns)
 
-# **Solo seleccionamos las 4 que usa el modelo**
-numerical_transformed = numerical_transformed[:, [0, 2, 3, 4]]
-
-# **Transformar booleans**
+# Transform booleans
 host_is_superhost, multi, biz, weekend = map(int, [host_is_superhost, multi, biz, weekend])
 
-# **OneHotEncoder**
+# Variables categóricas
 categorical_nominal = pd.DataFrame(
     [[room_type, host_is_superhost, multi, biz, weekend, city]],
     columns=["room_type", "host_is_superhost", "multi", "biz", "weekend", "city"]
 )
 
+# OneHotEncoder
 try:
     categorical_transformed = ohe.transform(categorical_nominal)
 except ValueError as e:
@@ -85,25 +70,29 @@ except ValueError as e:
 
 categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
 
-numeric_manual = np.array([[np.log1p(person_capacity), bedrooms]])
+# Crear array de entrada correctamente estructurado
+numeric_manual = np.array([[np.log1p(person_capacity), bedrooms]])  # ✅ Aplicar log a person_capacity
 
-# **Crear X_input**
 X_input = np.hstack((
     numeric_manual,
-    numerical_transformed,  #  Ya tiene solo las 4 features necesarias
+    numerical_transformed,
     categorical_transformed_df.to_numpy()
 ))
 
-# **Predicción de satisfacción**
-if st.sidebar.button("Predict Satisfaction"):
+# **Depuración: Revisar X_input antes de predecir**
+st.write("X_input shape:", X_input.shape)
+st.write("X_input values:", X_input)
+
+if st.sidebar.button("Predict Guest Satisfaction"):
     try:
         log_satisfaction_predicted = model_satisfaction.predict(X_input)[0]
-        satisfaction_predicted = np.expm1(log_satisfaction_predicted)  #  Convertir de log a escala normal
+        satisfaction_predicted = np.expm1(log_satisfaction_predicted)  # ✅ Convertir de log a escala normal
 
         result_html = f"""
         <div style='text-align: center; padding: 20px; background-color: {background_color}; border-radius: 10px;'>
             <h2 style='color: white;'>Estimated Guest Satisfaction</h2>
-            <h1 style='color: {primary_color}; font-size: 48px;'>{satisfaction_predicted:.2f} / 100</h1>
+            <h1 style='color: {primary_color}; font-size: 48px;'>{satisfaction_predicted:.2f}</h1>
+            <p style='color: white; font-size: 18px;'>out of 100</p>
         </div>
         """
         st.markdown(result_html, unsafe_allow_html=True)
