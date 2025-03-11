@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
@@ -11,8 +12,8 @@ model_satisfaction = joblib.load('models/satis_model_reg.pkl')  # Modelo de Regr
 normalizer = joblib.load('scalers/normalizer.pkl')  # MinMaxScaler
 ohe = joblib.load('scalers/ohe.pkl')  # OneHotEncoder
 
-# Solución al error de Matplotlib
-viridis = cm.colormaps["viridis"]
+# Solución al error de Matplotlib (compatibilidad con versiones anteriores)
+viridis = plt.get_cmap("viridis")
 
 primary_color = mcolors.to_hex(viridis(0.6))  
 background_color = mcolors.to_hex(viridis(0.2))  
@@ -87,8 +88,9 @@ X_input = np.hstack((
     categorical_transformed_df.to_numpy()
 ))
 
-# Convertir X_input a DataFrame con los nombres correctos para evitar el error de "X does not have valid feature names"
-X_input_df = pd.DataFrame(X_input, columns=list(features.columns))
+# Convertir X_input a DataFrame con los nombres correctos para evitar errores en la predicción
+feature_names = ["person_capacity", "bedrooms"] + list(normalizer.feature_names_in_) + list(ohe.get_feature_names_out())
+X_input_df = pd.DataFrame(X_input, columns=feature_names)
 
 # Botón de predicción
 if st.sidebar.button("Predict Guest Satisfaction"):
