@@ -49,6 +49,14 @@ attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 numerical_columns = pd.DataFrame([[cleanliness_rating, dist, metro_dist, attr_index]], 
                                  columns=["cleanliness_rating", "dist", "metro_dist", "attr_index"])
 
+# Agregar `guest_satisfaction_overall` y `rest_index` con valores dummy
+numerical_columns["guest_satisfaction_overall"] = 85  # Media aproximada del dataset
+numerical_columns["rest_index"] = 300  # Media aproximada del dataset
+
+# Reordenar las columnas en el mismo orden que espera el scaler
+numerical_columns = numerical_columns[["cleanliness_rating", "guest_satisfaction_overall", "dist", 
+                                       "metro_dist", "attr_index", "rest_index"]]
+
 # Aplicar transformación con el scaler
 numerical_transformed = normalizer.transform(numerical_columns)
 
