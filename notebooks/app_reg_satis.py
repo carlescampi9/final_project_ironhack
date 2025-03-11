@@ -49,14 +49,6 @@ attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 numerical_columns = pd.DataFrame([[cleanliness_rating, dist, metro_dist, attr_index]], 
                                  columns=["cleanliness_rating", "dist", "metro_dist", "attr_index"])
 
-# Agregar las columnas faltantes con valores dummy
-numerical_columns["guest_satisfaction_overall"] = 50  # Valor promedio
-numerical_columns["rest_index"] = 250  # Valor promedio
-
-# Reordenar las columnas en el mismo orden que espera el scaler
-numerical_columns = numerical_columns[["cleanliness_rating", "guest_satisfaction_overall", "dist", 
-                                       "metro_dist", "attr_index", "rest_index"]]
-
 # Aplicar transformación con el scaler
 numerical_transformed = normalizer.transform(numerical_columns)
 
@@ -91,9 +83,15 @@ X_input = np.hstack((
     categorical_transformed_df.to_numpy()
 ))
 
+# Obtener las columnas con las que se entrenó el modelo
+expected_features = model_satisfaction.feature_names_in_
+
 # Convertir X_input a DataFrame con los nombres correctos para evitar errores en la predicción
 feature_names = ["person_capacity", "bedrooms"] + list(normalizer.feature_names_in_) + list(ohe.get_feature_names_out())
 X_input_df = pd.DataFrame(X_input, columns=feature_names)
+
+# Filtrar solo las columnas usadas en el modelo
+X_input_df = X_input_df[expected_features]
 
 # Botón de predicción
 if st.sidebar.button("Predict Guest Satisfaction"):
