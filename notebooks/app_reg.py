@@ -78,7 +78,7 @@ X_input = np.hstack((
     categorical_transformed_df.to_numpy()
 ))
 
-if st.sidebar.button("Predict Price (Regression)"):
+if st.sidebar.button("Predict Price"):
     try:
         log_price_predicted = model_price_reg.predict(X_input)[0]
         price_predicted = np.expm1(log_price_predicted)
