@@ -106,10 +106,13 @@ if st.sidebar.button("Predict Guest Satisfaction"):
     try:
         satisfaction_predicted = model_satisfaction.predict(X_input_df)[0]
 
+        # ✅ Multiplicar por 100 para obtener el porcentaje real
+        satisfaction_predicted = satisfaction_predicted * 100  
+
         result_html = f"""
         <div style='text-align: center; padding: 20px; background-color: {background_color}; border-radius: 10px;'>
             <h2 style='color: white;'>Estimated Guest Satisfaction</h2>
-            <h1 style='color: {primary_color}; font-size: 48px;'>{satisfaction_predicted:.2f}</h1>
+            <h1 style='color: {primary_color}; font-size: 48px;'>{satisfaction_predicted:.4f}</h1>
             <p style='color: white; font-size: 18px;'>out of 100</p>
         </div>
         """
