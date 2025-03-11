@@ -8,11 +8,11 @@ import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Load models and scalers
-model_satisfaction = joblib.load('models/satis_model_reg.pkl')  # Modelo de Regresión
+model_satisfaction = joblib.load('models/satis_model_reg.pkl')  # Regression Model
 normalizer = joblib.load('scalers/normalizer.pkl')  # MinMaxScaler
 ohe = joblib.load('scalers/ohe.pkl')  # OneHotEncoder
 
-# Solución al error de Matplotlib (compatibilidad con versiones anteriores)
+# Matplotlib compatibility adjustment
 viridis = plt.get_cmap("viridis")
 
 primary_color = mcolors.to_hex(viridis(0.6))  
@@ -45,29 +45,29 @@ dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 50.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 50.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 
-# Crear DataFrame con las variables actuales
+# Create DataFrame with numerical variables
 numerical_columns = pd.DataFrame([[cleanliness_rating, dist, metro_dist, attr_index]], 
                                  columns=["cleanliness_rating", "dist", "metro_dist", "attr_index"])
 
-# Agregar `guest_satisfaction_overall` y `rest_index` con valores dummy
-numerical_columns["guest_satisfaction_overall"] = 85  # Media aproximada del dataset
-numerical_columns["rest_index"] = 300  # Media aproximada del dataset
+# Add `guest_satisfaction_overall` and `rest_index` with dummy values
+numerical_columns["guest_satisfaction_overall"] = 85  
+numerical_columns["rest_index"] = 300  
 
-# Reordenar las columnas en el mismo orden que espera el scaler
+# Reorder columns to match the scaler's expected input
 numerical_columns = numerical_columns[["cleanliness_rating", "guest_satisfaction_overall", "dist", 
                                        "metro_dist", "attr_index", "rest_index"]]
 
-# Aplicar transformación con el scaler
+# Apply MinMaxScaler transformation
 numerical_transformed = normalizer.transform(numerical_columns)
 
-# Transformar booleanos
+# Transform boolean variables
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
 host_is_superhost, multi, biz, weekend = map(int, [host_is_superhost, multi, biz, weekend])
 
-# OneHotEncoding de variables categóricas
+# OneHotEncoding for categorical variables
 categorical_nominal = pd.DataFrame(
     [[room_type, host_is_superhost, multi, biz, weekend, city]],
     columns=["room_type", "host_is_superhost", "multi", "biz", "weekend", "city"]
@@ -76,38 +76,41 @@ categorical_nominal = pd.DataFrame(
 try:
     categorical_transformed = ohe.transform(categorical_nominal)
 except ValueError as e:
-    st.error(f"Error en OneHotEncoder: {e}")
+    st.error(f"Error in OneHotEncoder: {e}")
     st.stop()
 
 categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
 
-# Variables manuales
+# Manual numerical variables
 numeric_manual = np.array([[person_capacity, bedrooms]])
 
-# Combinar todas las variables para el modelo
+# Combine all features for model input
 X_input = np.hstack((
     numeric_manual,
     numerical_transformed,
     categorical_transformed_df.to_numpy()
 ))
 
-# Obtener las columnas con las que se entrenó el modelo
+# Get expected feature names from the trained model
 expected_features = model_satisfaction.feature_names_in_
 
-# Convertir X_input a DataFrame con los nombres correctos para evitar errores en la predicción
+# Convert X_input to DataFrame with correct column names to avoid prediction errors
 feature_names = ["person_capacity", "bedrooms"] + list(normalizer.feature_names_in_) + list(ohe.get_feature_names_out())
 X_input_df = pd.DataFrame(X_input, columns=feature_names)
 
-# Filtrar solo las columnas usadas en el modelo
+# Select only the columns expected by the model
 X_input_df = X_input_df[expected_features]
 
-# Botón de predicción
+# Prediction button
 if st.sidebar.button("Predict Guest Satisfaction"):
     try:
         satisfaction_predicted = model_satisfaction.predict(X_input_df)[0]
 
-        # ✅ Multiplicar por 100 para obtener el porcentaje real
+        # Scale the value to percentage
         satisfaction_predicted = satisfaction_predicted * 100  
+
+        # Ensure the maximum value is 100
+        satisfaction_predicted = min(satisfaction_predicted, 100)
 
         result_html = f"""
         <div style='text-align: center; padding: 20px; background-color: {background_color}; border-radius: 10px;'>
@@ -118,4 +121,4 @@ if st.sidebar.button("Predict Guest Satisfaction"):
         """
         st.markdown(result_html, unsafe_allow_html=True)
     except Exception as e:
-        st.error(f"Error en predicción: {e}")
+        st.error(f"Error in prediction: {e}")
