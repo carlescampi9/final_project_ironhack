@@ -7,9 +7,9 @@ import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Cargar modelo y transformadores
-model_satisfaction = joblib.load('models/satisfaction_model.pkl')  # ✅ Modelo corregido
-normalizer = joblib.load('scalers/normalizer.pkl')  # ✅ MinMaxScaler
-ohe = joblib.load('scalers/ohe.pkl')  # ✅ OneHotEncoder
+model_satisfaction = joblib.load('models/satisfaction_model.pkl')
+normalizer = joblib.load('scalers/normalizer.pkl')
+ohe = joblib.load('scalers/ohe.pkl')
 
 # Configurar la paleta de colores Viridis
 viridis = cm.get_cmap('viridis')
@@ -49,23 +49,21 @@ dist = st.sidebar.slider("Distance to City Center (km)", 0.0, 50.0, 10.0)
 metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 50.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 
-# 📌 Variables que no se usan en el modelo, pero normalizadas
-rest_index = st.sidebar.slider("Restaurant Index (not used)", 0.0, 500.0, 500.0)  
-realSum = st.sidebar.slider("RealSum (not used)", 0.0, 1000.0, 500.0)  
+# 📌 Variables **no usadas en el modelo**, pero requeridas por MinMaxScaler
+guest_satisfaction_overall = 85.0  # Placeholder para evitar errores
+rest_index = 500.0  # Placeholder para evitar errores
 
-host_is_superhost = st.sidebar.checkbox("Is Superhost?")
-multi = st.sidebar.checkbox("Multiple Listing?")
-biz = st.sidebar.checkbox("Business Accommodation?")
-weekend = st.sidebar.checkbox("Is Weekend?")
-
-# 📌 **Transformaciones necesarias para que coincidan con el entrenamiento**
+# 📌 **Transformaciones necesarias**
 numerical_columns = np.array([[
-    cleanliness_rating, dist, metro_dist, attr_index  # ✅ Solo las 4 usadas en el modelo
+    cleanliness_rating, guest_satisfaction_overall, dist, metro_dist, attr_index, rest_index  # ✅ Normalizamos TODAS las 6
 ]])
 numerical_transformed = normalizer.transform(numerical_columns)
 
 # 📌 **Transformar valores booleanos**
-host_is_superhost, multi, biz, weekend = map(int, [host_is_superhost, multi, biz, weekend])
+host_is_superhost = int(st.sidebar.checkbox("Is Superhost?"))
+multi = int(st.sidebar.checkbox("Multiple Listing?"))
+biz = int(st.sidebar.checkbox("Business Accommodation?"))
+weekend = int(st.sidebar.checkbox("Is Weekend?"))
 
 # 📌 **Transformar con OneHotEncoder**
 categorical_nominal = pd.DataFrame(
@@ -87,7 +85,7 @@ numeric_manual = np.array([[np.log1p(person_capacity), bedrooms]])
 # 📌 **Combinar todas las features asegurando la misma dimensión**
 X_input = np.hstack((
     numeric_manual,                          # (1,2)
-    numerical_transformed[:, [0, 1, 2, 3]],  # ✅ Solo las 4 que necesita el modelo
+    numerical_transformed[:, [0, 2, 3, 4]],  # ✅ Usamos solo las 4 correctas
     categorical_transformed_df.to_numpy()    # (1, X)
 ))
 
