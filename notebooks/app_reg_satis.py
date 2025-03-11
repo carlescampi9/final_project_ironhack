@@ -11,12 +11,9 @@ model_satisfaction = joblib.load('models/satis_model_reg.pkl')  # Modelo de Regr
 normalizer = joblib.load('scalers/normalizer.pkl')  # MinMaxScaler
 ohe = joblib.load('scalers/ohe.pkl')  # OneHotEncoder
 
-# Verificación de las features esperadas en MinMaxScaler
-expected_features = normalizer.feature_names_in_
-print("Features esperadas por MinMaxScaler:", expected_features)
+# Solución al error de Matplotlib
+viridis = cm.colormaps["viridis"]
 
-# Configurar la paleta de colores Viridis
-viridis = cm.get_cmap('viridis')
 primary_color = mcolors.to_hex(viridis(0.6))  
 background_color = mcolors.to_hex(viridis(0.2))  
 
@@ -48,17 +45,15 @@ metro_dist = st.sidebar.slider("Distance to Metro (km)", 0.0, 50.0, 5.0)
 attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 
 # Transformaciones
-numerical_columns = np.array([[cleanliness_rating, dist, metro_dist, attr_index]])
+numerical_columns = pd.DataFrame([[cleanliness_rating, dist, metro_dist, attr_index]], 
+                                 columns=["cleanliness_rating", "dist", "metro_dist", "attr_index"])
 
-# Verificar si faltan columnas en el scaler
-num_features_expected = len(expected_features)
-num_features_actual = numerical_columns.shape[1]
+# Verificar que las columnas coincidan con las esperadas por el scaler
+if list(numerical_columns.columns) != list(normalizer.feature_names_in_):
+    st.error(f"Error: Features esperadas por el scaler: {list(normalizer.feature_names_in_)}")
+    st.stop()
 
-if num_features_actual < num_features_expected:
-    missing_columns = num_features_expected - num_features_actual
-    dummy_values = np.zeros((numerical_columns.shape[0], missing_columns))  # Crear valores de relleno
-    numerical_columns = np.hstack((numerical_columns, dummy_values))  # Agregar valores dummy
-
+# Aplicar transformación con el scaler
 numerical_transformed = normalizer.transform(numerical_columns)
 
 # Transformar booleanos
@@ -77,7 +72,7 @@ categorical_nominal = pd.DataFrame(
 try:
     categorical_transformed = ohe.transform(categorical_nominal)
 except ValueError as e:
-    st.error(f"Error in OneHotEncoder: {e}")
+    st.error(f"Error en OneHotEncoder: {e}")
     st.stop()
 
 categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
@@ -92,10 +87,13 @@ X_input = np.hstack((
     categorical_transformed_df.to_numpy()
 ))
 
+# Convertir X_input a DataFrame con los nombres correctos para evitar el error de "X does not have valid feature names"
+X_input_df = pd.DataFrame(X_input, columns=list(features.columns))
+
 # Botón de predicción
 if st.sidebar.button("Predict Guest Satisfaction"):
     try:
-        satisfaction_predicted = model_satisfaction.predict(X_input)[0]
+        satisfaction_predicted = model_satisfaction.predict(X_input_df)[0]
 
         result_html = f"""
         <div style='text-align: center; padding: 20px; background-color: {background_color}; border-radius: 10px;'>
@@ -106,4 +104,4 @@ if st.sidebar.button("Predict Guest Satisfaction"):
         """
         st.markdown(result_html, unsafe_allow_html=True)
     except Exception as e:
-        st.error(f"Error in prediction: {e}")
+        st.error(f"Error en predicción: {e}")
