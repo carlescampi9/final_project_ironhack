@@ -7,13 +7,16 @@ import matplotlib.colors as mcolors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Load models and scalers
-model_satisfaction = joblib.load('models/satis_model_reg.pkl')  #  Modelo de Regresión
-normalizer = joblib.load('scalers/normalizer.pkl')  #  MinMaxScaler
-ohe = joblib.load('scalers/ohe.pkl')  #  OneHotEncoder
+model_satisfaction = joblib.load('models/satis_model_reg.pkl')  # Modelo de Regresión
+normalizer = joblib.load('scalers/normalizer.pkl')  # MinMaxScaler
+ohe = joblib.load('scalers/ohe.pkl')  # OneHotEncoder
 
-# Configure the Viridis color palette
+# Verificación de las features esperadas en MinMaxScaler
+expected_features = normalizer.feature_names_in_
+print("Features esperadas por MinMaxScaler:", expected_features)
+
+# Configurar la paleta de colores Viridis
 viridis = cm.get_cmap('viridis')
-norm = mcolors.Normalize(vmin=0, vmax=1)
 primary_color = mcolors.to_hex(viridis(0.6))  
 background_color = mcolors.to_hex(viridis(0.2))  
 
@@ -46,15 +49,26 @@ attr_index = st.sidebar.slider("Attraction Index", 0.0, 2000.0, 1500.0)
 
 # Transformaciones
 numerical_columns = np.array([[cleanliness_rating, dist, metro_dist, attr_index]])
+
+# Verificar si faltan columnas en el scaler
+num_features_expected = len(expected_features)
+num_features_actual = numerical_columns.shape[1]
+
+if num_features_actual < num_features_expected:
+    missing_columns = num_features_expected - num_features_actual
+    dummy_values = np.zeros((numerical_columns.shape[0], missing_columns))  # Crear valores de relleno
+    numerical_columns = np.hstack((numerical_columns, dummy_values))  # Agregar valores dummy
+
 numerical_transformed = normalizer.transform(numerical_columns)
 
-# Transform booleans
+# Transformar booleanos
 host_is_superhost = st.sidebar.checkbox("Is Superhost?")
 multi = st.sidebar.checkbox("Multiple Listing?")
 biz = st.sidebar.checkbox("Business Accommodation?")
 weekend = st.sidebar.checkbox("Is Weekend?")
 host_is_superhost, multi, biz, weekend = map(int, [host_is_superhost, multi, biz, weekend])
 
+# OneHotEncoding de variables categóricas
 categorical_nominal = pd.DataFrame(
     [[room_type, host_is_superhost, multi, biz, weekend, city]],
     columns=["room_type", "host_is_superhost", "multi", "biz", "weekend", "city"]
@@ -68,14 +82,17 @@ except ValueError as e:
 
 categorical_transformed_df = pd.DataFrame(categorical_transformed, columns=ohe.get_feature_names_out())
 
+# Variables manuales
 numeric_manual = np.array([[person_capacity, bedrooms]])
 
+# Combinar todas las variables para el modelo
 X_input = np.hstack((
     numeric_manual,
     numerical_transformed,
     categorical_transformed_df.to_numpy()
 ))
 
+# Botón de predicción
 if st.sidebar.button("Predict Guest Satisfaction"):
     try:
         satisfaction_predicted = model_satisfaction.predict(X_input)[0]
