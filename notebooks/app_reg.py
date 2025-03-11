@@ -18,7 +18,7 @@ primary_color = mcolors.to_hex(viridis(0.6))
 background_color = mcolors.to_hex(viridis(0.2))  
 
 title_html = f"""
-    <h1 style='text-align: center; color: {primary_color};'>Airbnb Price Prediction (Regression)</h1>
+    <h1 style='text-align: center; color: {primary_color};'>Airbnb Price Prediction</h1>
 """
 st.markdown(title_html, unsafe_allow_html=True)
 
@@ -78,7 +78,7 @@ X_input = np.hstack((
     categorical_transformed_df.to_numpy()
 ))
 
-if st.sidebar.button("Predict Price"):
+if st.sidebar.button("Predict Price (Regression)"):
     try:
         log_price_predicted = model_price_reg.predict(X_input)[0]
         price_predicted = np.expm1(log_price_predicted)
